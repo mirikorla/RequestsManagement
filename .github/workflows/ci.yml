@@ -24,7 +24,24 @@ jobs:
 
       # No INTEGRATION_SQL here, so the integration tests start their own SQL Server container.
       - name: Test
-        run: dotnet test RequestsManagement.slnx --configuration Release --no-build --logger "console;verbosity=normal"
+        run: |
+          dotnet test RequestsManagement.slnx --configuration Release --no-build \
+            --logger "console;verbosity=normal" --logger "trx" --results-directory TestResults
+
+      # Counts come from the test result files, so the summary shows what actually ran.
+      - name: Test summary
+        if: always()
+        run: |
+          total=0; passed=0; failed=0
+          for f in TestResults/*.trx; do
+            t=$(grep -o 'total="[0-9]*"' "$f" | head -1 | grep -o '[0-9]*')
+            p=$(grep -o 'passed="[0-9]*"' "$f" | head -1 | grep -o '[0-9]*')
+            x=$(grep -o 'failed="[0-9]*"' "$f" | head -1 | grep -o '[0-9]*')
+            total=$((total+t)); passed=$((passed+p)); failed=$((failed+x))
+          done
+          echo "### Backend tests: $passed / $total passed, $failed failed" >> "$GITHUB_STEP_SUMMARY"
+          echo "Integration tests ran against a real SQL Server container (Testcontainers)." >> "$GITHUB_STEP_SUMMARY"
+          echo "passed=$passed total=$total failed=$failed"
 
   frontend:
     name: Angular build
@@ -67,9 +84,23 @@ jobs:
 
       - name: Request through the web container (nginx proxies /api to the API)
         run: |
-          curl --silent --fail http://localhost:8080/ | grep -q "<app-root" && echo "UI is served"
-          curl --silent --fail "http://localhost:8080/api/requests?pageSize=1" | tee /tmp/page.json
-          grep -q '"totalCount":100000' /tmp/page.json && echo && echo "100,000 requests seeded and returned through the web container"
+          if ! curl --silent --fail http://localhost:8080/ | grep -q "<app-root"; then
+            echo "The Angular app is not served on port 8080"; exit 1
+          fi
+          echo "UI is served"
+
+          curl --silent --fail "http://localhost:8080/api/requests?pageSize=1" > /tmp/page.json
+          if ! grep -q '"totalCount":100000' /tmp/page.json; then
+            echo "Expected 100,000 requests through /api, got:"; cat /tmp/page.json; exit 1
+          fi
+          echo "100,000 requests seeded and returned through the web container"
+
+          {
+            echo "### Docker Compose smoke test"
+            echo "- SQL Server, API and web containers started"
+            echo "- Angular app served by nginx on port 8080"
+            echo "- \`GET /api/requests\` through nginx returned \`totalCount: 100000\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Logs on failure
         if: failure()
