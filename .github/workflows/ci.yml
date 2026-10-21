@@ -1,0 +1,80 @@
+# Runs on every push and pull request. Three independent jobs:
+#   backend  - build + all 37 tests; integration tests use a real SQL Server in Docker (Testcontainers)
+#   frontend - clean npm install + production build of the Angular client
+#   docker   - docker compose up of SQL Server + API + web, then a real request through nginx
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend:
+    name: Backend build and tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Build
+        run: dotnet build RequestsManagement.slnx --configuration Release
+
+      # No INTEGRATION_SQL here, so the integration tests start their own SQL Server container.
+      - name: Test
+        run: dotnet test RequestsManagement.slnx --configuration Release --no-build --logger "console;verbosity=normal"
+
+  frontend:
+    name: Angular build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npx ng build --configuration production
+
+  docker:
+    name: Docker Compose smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and start SQL Server, API and web
+        run: docker compose up --build --detach
+
+      # The API applies migrations and seeds 100,000 requests on first start, so allow a few minutes.
+      - name: Wait for the API
+        run: |
+          for i in $(seq 1 60); do
+            if curl --silent --fail http://localhost:5045/health; then echo; echo "API is up"; exit 0; fi
+            sleep 5
+          done
+          echo "API did not start in time"; exit 1
+
+      - name: Request through the web container (nginx proxies /api to the API)
+        run: |
+          curl --silent --fail http://localhost:8080/ | grep -q "<app-root" && echo "UI is served"
+          curl --silent --fail "http://localhost:8080/api/requests?pageSize=1" | tee /tmp/page.json
+          grep -q '"totalCount":100000' /tmp/page.json && echo && echo "100,000 requests seeded and returned through the web container"
+
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs
+
+      - name: Stop
+        if: always()
+        run: docker compose down --volumes
