@@ -1,0 +1,27 @@
+@if (summary(); as s) {
+  <section class="summary" aria-label="נתונים מסכמים">
+    <div class="tile total">
+      <span class="label">סה״כ פניות</span>
+      <span class="value">{{ s.total | number }}</span>
+    </div>
+    @for (status of statuses; track status) {
+      <div class="tile" [attr.data-status]="status">
+        <span class="label">{{ statusLabels[status] }}</span>
+        <span class="value">{{ s.byStatus[status] | number }}</span>
+      </div>
+    }
+    <div class="tile priorities">
+      <span class="label">לפי עדיפות</span>
+      <span class="split">
+        @for (p of priorities; track p) {
+          <span
+            >{{ priorityLabels[p] }}: <b>{{ s.byPriority[p] | number }}</b></span
+          >
+        }
+      </span>
+    </div>
+    <span class="stamp">נכון ל-{{ s.generatedAt | date: 'HH:mm:ss' }}</span>
+  </section>
+} @else {
+  <section class="summary placeholder">טוען נתונים מסכמים…</section>
+}

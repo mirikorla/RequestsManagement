@@ -1,0 +1,27 @@
+<dialog #dialog (close)="closed.emit()" aria-labelledby="history-title">
+  <header>
+    <h2 id="history-title">היסטוריית סטטוס – פנייה {{ request().id }}</h2>
+    <button type="button" class="link" (click)="dialog.close()" aria-label="סגירה">✕</button>
+  </header>
+  <p class="subtitle">{{ request().title }} · {{ request().organizationName }}</p>
+
+  @let s = state();
+  @if (s.kind === 'loading') {
+    <p class="muted">טוען…</p>
+  } @else if (s.kind === 'error') {
+    <p class="error">{{ s.message }}</p>
+  } @else if (s.items.length === 0) {
+    <p class="muted">לא בוצעו שינויי סטטוס בפנייה זו.</p>
+  } @else {
+    <ol class="timeline">
+      @for (h of s.items; track h.id) {
+        <li>
+          <b>{{ labels[h.previousStatus] }} ← {{ labels[h.newStatus] }}</b>
+          <span class="muted"
+            >{{ h.changedAt | date: 'dd/MM/yy HH:mm:ss' }} · {{ h.changedBy }}</span
+          >
+        </li>
+      }
+    </ol>
+  }
+</dialog>

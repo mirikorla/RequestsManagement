@@ -1,0 +1,72 @@
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th class="check">
+          <input
+            type="checkbox"
+            [checked]="allSelected()"
+            (change)="toggleAll.emit(!allSelected())"
+            aria-label="בחירת כל העמוד"
+          />
+        </th>
+        @for (col of columns; track col.label) {
+          <th [attr.aria-sort]="ariaSort(col.field)">
+            @if (col.field; as field) {
+              <button type="button" class="sort" (click)="sortChange.emit(field)">
+                {{ col.label }} <span class="indicator">{{ sortIndicator(field) }}</span>
+              </button>
+            } @else {
+              {{ col.label }}
+            }
+          </th>
+        }
+        <th>פעולות</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (row of rows(); track row.id) {
+        <tr [class.selected]="selectedIds().has(row.id)">
+          <td class="check">
+            <input
+              type="checkbox"
+              [checked]="selectedIds().has(row.id)"
+              (change)="toggleSelect.emit(row.id)"
+              [attr.aria-label]="'בחירת פנייה ' + row.id"
+            />
+          </td>
+          <td class="num">{{ row.id }}</td>
+          <td>{{ row.title }}</td>
+          <td>{{ row.organizationName }}</td>
+          <td>
+            <span class="badge" [attr.data-status]="row.status">{{
+              statusLabels[row.status]
+            }}</span>
+          </td>
+          <td>
+            <span class="priority" [attr.data-priority]="row.priority">{{
+              priorityLabels[row.priority]
+            }}</span>
+          </td>
+          <td>{{ row.assignedTo ?? '—' }}</td>
+          <td class="date">{{ row.createdAt | date: 'dd/MM/yy HH:mm' }}</td>
+          <td class="date">{{ row.updatedAt | date: 'dd/MM/yy HH:mm' }}</td>
+          <td class="actions">
+            <select
+              #statusSelect
+              (change)="onStatusSelect(row, statusSelect)"
+              [disabled]="pendingId() === row.id"
+              aria-label="שינוי סטטוס"
+            >
+              <option value="">{{ pendingId() === row.id ? 'שומר…' : 'שינוי סטטוס' }}</option>
+              @for (target of transitions[row.status]; track target) {
+                <option [value]="target">{{ statusLabels[target] }}</option>
+              }
+            </select>
+            <button type="button" class="link" (click)="openHistory.emit(row)">היסטוריה</button>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

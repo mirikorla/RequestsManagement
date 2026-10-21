@@ -1,0 +1,15 @@
+<div class="bulk-bar">
+  <span>{{ selectedCount() }} נבחרו</span>
+  <label>
+    העבר לסטטוס
+    <select [ngModel]="targetStatus()" (ngModelChange)="targetStatus.set($event)">
+      @for (s of statuses; track s) {
+        <option [value]="s">{{ statusLabels[s] }}</option>
+      }
+    </select>
+  </label>
+  <button type="button" (click)="apply.emit(targetStatus())" [disabled]="running()">
+    {{ running() ? 'מעדכן…' : 'עדכון מרוכז' }}
+  </button>
+  <button type="button" class="link" (click)="clear.emit()">ביטול בחירה</button>
+</div>

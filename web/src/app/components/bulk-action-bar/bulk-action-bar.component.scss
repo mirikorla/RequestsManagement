@@ -1,0 +1,10 @@
+.bulk-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+  padding: 8px 12px;
+  background: var(--surface-2);
+  border-radius: 6px;
+}

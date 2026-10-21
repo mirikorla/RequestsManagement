@@ -1,0 +1,12 @@
+.pager {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+.total {
+  margin-inline-end: auto;
+  color: var(--muted);
+}

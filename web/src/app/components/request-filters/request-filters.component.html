@@ -1,0 +1,41 @@
+<form class="filters" [formGroup]="form" (submit)="$event.preventDefault()">
+  <label class="wide">
+    חיפוש חופשי (כותרת / ארגון)
+    <input type="search" formControlName="search" placeholder="לדוגמה: Refund" maxlength="100" />
+  </label>
+  <label>
+    סטטוס
+    <select formControlName="status">
+      <option value="">הכל</option>
+      @for (s of statuses; track s) {
+        <option [value]="s">{{ statusLabels[s] }}</option>
+      }
+    </select>
+  </label>
+  <label>
+    עדיפות
+    <select formControlName="priority">
+      <option value="">הכל</option>
+      @for (p of priorities; track p) {
+        <option [value]="p">{{ priorityLabels[p] }}</option>
+      }
+    </select>
+  </label>
+  <label>
+    ארגון (מתחיל ב…)
+    <input type="text" formControlName="organizationName" maxlength="200" />
+  </label>
+  <label>
+    מטפל
+    <input type="text" formControlName="assignedTo" placeholder="agent07" maxlength="100" />
+  </label>
+  <label>
+    נוצרה מתאריך
+    <input type="date" formControlName="createdFrom" />
+  </label>
+  <label>
+    עד תאריך
+    <input type="date" formControlName="createdTo" />
+  </label>
+  <button type="button" class="link" (click)="form.reset()">ניקוי</button>
+</form>

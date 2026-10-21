@@ -1,0 +1,22 @@
+<nav class="pager" aria-label="דפדוף">
+  <span class="total">{{ totalCount() | number }} פניות</span>
+  <button type="button" (click)="pageChange.emit(1)" [disabled]="page() <= 1">ראשון</button>
+  <button type="button" (click)="pageChange.emit(page() - 1)" [disabled]="page() <= 1">
+    הקודם
+  </button>
+  <span>עמוד {{ page() | number }} מתוך {{ totalPages() | number }}</span>
+  <button type="button" (click)="pageChange.emit(page() + 1)" [disabled]="page() >= totalPages()">
+    הבא
+  </button>
+  <button type="button" (click)="pageChange.emit(totalPages())" [disabled]="page() >= totalPages()">
+    אחרון
+  </button>
+  <label>
+    בעמוד
+    <select [value]="pageSize()" (change)="pageSizeChange.emit(+$any($event.target).value)">
+      @for (size of sizes; track size) {
+        <option [value]="size" [selected]="size === pageSize()">{{ size }}</option>
+      }
+    </select>
+  </label>
+</nav>

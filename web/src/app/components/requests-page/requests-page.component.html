@@ -1,0 +1,76 @@
+<header class="page-header">
+  <h1>ניהול פניות</h1>
+  <label class="user">
+    משתמש נוכחי
+    <input
+      type="text"
+      [ngModel]="currentUser()"
+      (ngModelChange)="currentUser.set($event)"
+      maxlength="100"
+    />
+  </label>
+</header>
+
+<app-summary-panel [summary]="summary()" />
+
+<app-request-filters (filtersChange)="onFiltersChange($event)" />
+
+@if (notice(); as n) {
+  <div class="notice" [class]="n.type" role="status">
+    <span>{{ n.text }}</span>
+    <button type="button" class="link" (click)="notice.set(null)" aria-label="סגירה">✕</button>
+  </div>
+}
+
+@if (selectedRows().length > 0) {
+  <app-bulk-action-bar
+    [selectedCount]="selectedRows().length"
+    [running]="bulkRunning()"
+    (apply)="runBulk($event)"
+    (clear)="toggleAll(false)"
+  />
+}
+
+<section class="results" [class.busy]="list().loading">
+  @if (list().error; as error) {
+    <div class="state error" role="alert">
+      <p>לא ניתן לטעון את הפניות: {{ error }}</p>
+      <button type="button" (click)="retry()">נסו שוב</button>
+    </div>
+  } @else if (list().data; as data) {
+    @if (data.items.length === 0) {
+      <div class="state empty">לא נמצאו פניות התואמות לסינון.</div>
+    } @else {
+      <app-requests-table
+        [rows]="data.items"
+        [sortBy]="query().sortBy"
+        [sortDirection]="query().sortDirection"
+        [pendingId]="pendingId()"
+        [selectedIds]="selectedIds()"
+        (sortChange)="onSortChange($event)"
+        (statusChange)="changeStatus($event)"
+        (toggleSelect)="toggleSelected($event)"
+        (toggleAll)="toggleAll($event)"
+        (openHistory)="historyFor.set($event)"
+      />
+      <app-pager
+        [page]="data.page"
+        [pageSize]="data.pageSize"
+        [totalPages]="data.totalPages"
+        [totalCount]="data.totalCount"
+        (pageChange)="onPageChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      />
+    }
+  } @else {
+    <div class="state loading">טוען פניות…</div>
+  }
+
+  @if (list().loading && list().data) {
+    <div class="loading-overlay" aria-live="polite">טוען…</div>
+  }
+</section>
+
+@if (historyFor(); as request) {
+  <app-history-dialog [request]="request" (closed)="historyFor.set(null)" />
+}
