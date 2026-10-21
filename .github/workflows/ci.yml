@@ -1,6 +1,6 @@
 # Runs on every push and pull request. Three independent jobs:
 #   backend  - build + all 37 tests; integration tests use a real SQL Server in Docker (Testcontainers)
-#   frontend - clean npm install + production build of the Angular client
+#   frontend - clean npm install, Angular unit tests (Vitest) and a production build
 #   docker   - docker compose up of SQL Server + API + web, then a real request through nginx
 name: CI
 
@@ -44,7 +44,7 @@ jobs:
           echo "passed=$passed total=$total failed=$failed"
 
   frontend:
-    name: Angular build
+    name: Angular tests and build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -60,6 +60,9 @@ jobs:
 
       - name: Install
         run: npm ci
+
+      - name: Test
+        run: npx ng test --watch=false
 
       - name: Build
         run: npx ng build --configuration production

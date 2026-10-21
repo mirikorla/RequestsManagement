@@ -117,9 +117,15 @@ dotnet run --project src\RequestsManagement.Api -- --reseed 500000   # כמות 
 
 ### בדיקות
 
-37 בדיקות: 23 בדיקות יחידה (רצות בלי בסיס נתונים) ו-14 בדיקות Integration (שרת אמיתי מול SQL Server אמיתי).
+56 בדיקות אוטומטיות, וכולן רצות ב-CI בכל העלאה:
 
-**עם SQL Server Express (הדרך שנבדקה)**, ב-PowerShell:
+| איפה | כמה | מה הן בודקות |
+|---|---:|---|
+| שרת, בדיקות יחידה | 23 | חוקי המעבר, Audit ב-ServiceRequest, Validators. רצות בלי בסיס נתונים |
+| שרת, בדיקות Integration | 14 | שרת אמיתי מול SQL Server אמיתי: סינון, 400/404/422, עדכונים מתחרים, Bulk, היסטוריה, Cache |
+| Angular (Vitest) | 19 | ‏Debounce, ביטול בקשה ישנה (switchMap), טיפול ב-409, מצבי ריק ושגיאה, הפרמטרים שה-Service שולח, ופונקציות העזר |
+
+**בדיקות השרת, עם SQL Server Express**, ב-PowerShell:
 
 ```powershell
 $env:INTEGRATION_SQL="Server=.\SQLEXPRESS;Database=RequestsTests;Trusted_Connection=True;TrustServerCertificate=True"
@@ -132,6 +138,12 @@ dotnet test
 
 ```bash
 dotnet test tests/RequestsManagement.UnitTests
+```
+
+**בדיקות ה-Angular**, בתיקייה `web` (לא דורשות שרת: התשובות של ה-API מדומות):
+
+```powershell
+npm.cmd test -- --watch=false
 ```
 
 > אם השרת (API) רץ באותו זמן, הבנייה של הבדיקות עלולה להיכשל בשגיאה "The file is locked by: RequestsManagement.Api". הפתרון: לעצור את השרת לפני הרצת הבדיקות, או לבנות לתיקייה נפרדת: `dotnet test --artifacts-path .\.test-artifacts`.
@@ -172,6 +184,7 @@ tests/
   RequestsManagement.IntegrationTests  API + SQL Server אמיתי: סינון, 400/404/422, Concurrency, Bulk, היסטוריה, Cache
 
 web/src/app/                           Angular. לכל קומפוננטה תיקייה עם .component.ts / .html / .scss
+                                       (ובדיקות ב-.spec.ts לצד הקובץ שהן בודקות)
   components/
     requests-page/       הקומפוננטה הראשית: מחזיקה את ה-State ואת זרם ה-RxJS
     requests-table/      הטבלה                    ┐
