@@ -2,6 +2,8 @@
 
 # מערכת לניהול פניות – מבדק Full Stack
 
+[![CI](https://github.com/mirikorla/RequestsManagement/actions/workflows/ci.yml/badge.svg)](https://github.com/mirikorla/RequestsManagement/actions/workflows/ci.yml)
+
 מערכת לניהול פניות מארגונים: חיפוש, סינון, מיון ודפדוף בצד השרת על 100,000 רשומות, עדכון סטטוס עם Optimistic Concurrency, היסטוריית שינויים, עדכון מרוכז (Bulk) ונתונים מסכמים עם Cache.
 
 | מסמך | תוכן |
@@ -35,7 +37,8 @@
 | Frontend | Angular 22 (standalone components, signals, zoneless), RxJS 7.8, TypeScript 6 |
 | כלי בנייה ל-Frontend | Node.js 24, npm |
 | בדיקות | xUnit, WebApplicationFactory, Testcontainers (SQL Server אמיתי) |
-| הרצה | הרצה מקומית ב-Windows (נבדקה); Docker Compose ו-nginx (לא נבדקו, ראו "הרצה") |
+| הרצה | הרצה מקומית ב-Windows; Docker Compose ו-nginx |
+| CI | GitHub Actions: בנייה, כל הבדיקות (כולל Integration מול SQL Server ב-Docker), בניית Angular, והרצת Docker Compose מלאה, בכל העלאה |
 
 ## הרצה
 
@@ -84,9 +87,9 @@ npm.cmd start
 
 עצירה: ‏Ctrl+C בכל אחד מהחלונות.
 
-### אפשרות 2: Docker (לא נבדק)
+### אפשרות 2: Docker
 
-> **הערה:** ההגדרות ל-Docker קיימות בפרויקט (`docker-compose.yml` ו-Dockerfile לשרת ולממשק), אבל **לא נבדקו**: במחשב הפיתוח Docker לא היה זמין, כי הווירטואליזציה כבויה ב-BIOS. הדרך שנבדקה היא אפשרות 1.
+> **איך זה נבדק:** במחשב הפיתוח Docker לא היה זמין (הווירטואליזציה כבויה ב-BIOS), ולכן האפשרות הזו נבדקת **אוטומטית ב-CI**, בשרתי Linux של GitHub: בכל העלאה מורצת `docker compose up`, ונבדק שהממשק מוגש ושבקשה דרכו מחזירה את 100,000 הפניות. ב-Windows עם Docker Desktop היא לא נבדקה ידנית.
 
 דרישה: Docker Desktop.
 
@@ -125,7 +128,7 @@ dotnet test
 
 בדיקות ה-Integration מוחקות ויוצרות מחדש את הנתונים במסד שב-`INTEGRATION_SQL`, לכן יש להשתמש **במסד ייעודי לבדיקות** (`RequestsTests`), לא במסד שהמערכת עובדת מולו. מסד שלא קיים נוצר אוטומטית.
 
-**בלי `INTEGRATION_SQL`**, בדיקות ה-Integration מרימות SQL Server זמני ב-Docker (Testcontainers). הדרך הזו **לא נבדקה**, מאותה סיבה כמו אפשרות 2. בדיקות היחידה לבדן רצות בלי שום תלות:
+**בלי `INTEGRATION_SQL`**, בדיקות ה-Integration מרימות SQL Server זמני ב-Docker (Testcontainers). כך הן רצות ב-CI בכל העלאה. בדיקות היחידה לבדן רצות בלי שום תלות:
 
 ```bash
 dotnet test tests/RequestsManagement.UnitTests
