@@ -11,6 +11,20 @@
 | [docs/perf/measure.ps1](docs/perf/measure.ps1) | סקריפט המדידה: logical reads, Execution Plan בפועל וזמן ממוצע לכל שאילתה |
 | [docs/perf/measure.sql](docs/perf/measure.sql) | אותן שאילתות להרצה ב-SSMS עם Execution Plan גרפי |
 
+**תוכן עניינים:**
+[טכנולוגיות וגרסאות](#טכנולוגיות-וגרסאות) ·
+[הרצה](#הרצה) ·
+[מבנה הפתרון](#מבנה-הפתרון) ·
+[API](#api) ·
+[בסיס הנתונים](#בסיס-הנתונים) ·
+[Concurrency](#concurrency) ·
+[Bulk Update](#bulk-update--partial-success) ·
+[Cache](#cache) ·
+[Angular](#angular) ·
+[החלטות טכנולוגיות](#החלטות-טכנולוגיות-וחלופות) ·
+[מגבלות ושיפורים](#מגבלה-ידועה-ומה-אפשר-לשפר) ·
+[שימוש ב-AI](#שימוש-בכלי-ai)
+
 ## טכנולוגיות וגרסאות
 
 | שכבה | טכנולוגיה |
@@ -29,7 +43,14 @@
 
 זו הדרך שבה המערכת פותחה ונבדקה, כולל כל הבדיקות האוטומטיות והמדידות. דרישות: ‏.NET SDK 10 ו-Node.js 24.
 
-**1. התקנת SQL Server Express** (פעם אחת; אם מופיע חלון אישור, לאשר):
+**1. הורדת הפרויקט:**
+
+```powershell
+git clone https://github.com/mirikorla/RequestsManagement.git
+cd RequestsManagement
+```
+
+**2. התקנת SQL Server Express** (פעם אחת; אם מופיע חלון אישור, לאשר):
 
 ```powershell
 winget install --id Microsoft.SQLServer.2022.Express --source winget
@@ -37,20 +58,19 @@ winget install --id Microsoft.SQLServer.2022.Express --source winget
 
 השרת מותקן כשירות Windows בשם `SQLEXPRESS` ועולה אוטומטית עם המחשב. ההתחברות היא עם חשבון Windows, בלי סיסמה.
 
-**2. השרת (API)**, בחלון PowerShell אחד:
+**3. השרת (API)**, בחלון PowerShell אחד, בתיקיית הפרויקט (`RequestsManagement`):
 
 ```powershell
-cd <תיקיית הפרויקט>
 $env:ConnectionStrings__Default="Server=.\SQLEXPRESS;Database=RequestsManagement;Trusted_Connection=True;TrustServerCertificate=True"
 dotnet run --project src\RequestsManagement.Api
 ```
 
 בהרצה הראשונה נוצרים מסד הנתונים והטבלאות, ו-100,000 פניות (כ-10 שניות). ממתינים לשורה `Now listening on: http://localhost:5045`.
 
-**3. הממשק (Angular)**, בחלון PowerShell שני:
+**4. הממשק (Angular)**, בחלון PowerShell שני, בתיקיית הפרויקט:
 
 ```powershell
-cd <תיקיית הפרויקט>\web
+cd web
 npm.cmd install
 npm.cmd start
 ```
@@ -83,9 +103,11 @@ docker compose up --build
 
 ### יצירה חוזרת של נתוני הבדיקה
 
-```bash
-dotnet run --project src/RequestsManagement.Api -- --reseed          # 100,000 רשומות
-dotnet run --project src/RequestsManagement.Api -- --reseed 500000   # כמות אחרת
+כשהשרת לא רץ, בחלון PowerShell שבו הוגדרה מחרוזת החיבור (שלב 3 באפשרות 1):
+
+```powershell
+dotnet run --project src\RequestsManagement.Api -- --reseed          # 100,000 רשומות
+dotnet run --project src\RequestsManagement.Api -- --reseed 500000   # כמות אחרת
 ```
 
 הפקודה מוחקת את הפניות ואת ההיסטוריה ויוצרת אותן מחדש. הנתונים דטרמיניסטיים (Random עם Seed קבוע), כך שמדידות חוזרות ניתנות להשוואה.
@@ -221,7 +243,7 @@ web/src/app/                           Angular. לכל קומפוננטה תיק
 - הבדיקה `Concurrent_updates_with_the_same_version_let_exactly_one_win` שולחת שתי בקשות במקביל ומוודאת: אחת `200`, אחת `409`, ורשומת היסטוריה אחת בלבד.
 - ב-Angular, תשובת 409 מציגה הודעה עם הסטטוס הנוכחי ומרעננת את הרשימה, כדי שהמשתמש יוכל לנסות שוב על הגרסה העדכנית.
 
-## Bulk Update – ‏Partial Success
+## Bulk Update – Partial Success
 
 **ההחלטה:** הצלחה חלקית. כל פריט נשמר בטרנזקציה משלו, והתשובה היא `200` עם תוצאה לכל פריט:
 
@@ -253,12 +275,12 @@ web/src/app/                           Angular. לכל קומפוננטה תיק
 
 ## Angular
 
-- **צד שרת בלבד:** כל שינוי בחיפוש, סינון, מיון או עמוד יוצר `RequestQuery` חדש שנשלח ל-API. הלקוח לא מסנן ולא ממיין נתונים.
+- **צד שרת בלבד:** כל שינוי בחיפוש, סינון, מיון או עמוד יוצר `RequestQueryDto` חדש שנשלח ל-API. הלקוח לא מסנן ולא ממיין נתונים.
 - **Debounce:** טופס המסננים פולט ערך רק אחרי `debounceTime(350)` ו-`distinctUntilChanged`.
 - **ביטול בקשות קודמות:** ‏`switchMap` בזרם החיפוש. שינוי שאילתה בזמן שבקשה קודמת עדיין רצה מבטל אותה (`withFetch` → ‏AbortController). בשרת, ה-`CancellationToken` מבטל את השאילתה ל-SQL, ו-`GlobalExceptionHandler` מזהה ביטול מצד הלקוח ולא רושם אותו כשגיאה.
 - **מצבי UI:** Loading (בטעינה הראשונה הודעה; בטעינות הבאות הטבלה הקודמת נשארת מעומעמת כדי שלא תהבהב), Empty, ו-Error עם כפתור "נסו שוב".
 - **עדכון סטטוס:** התפריט מציע רק מעברים מותרים. השרת הוא הסמכות, ומחזיר 422 על מעבר לא מותר. טיפול ב-409 מתואר למעלה.
-- **הפרדת אחריות:** ‏`RequestsApiService` הוא המקום היחיד שמכיר HTTP. ‏`RequestsPageComponent` מחזיק את ה-State. הטבלה, המסננים, הדפדוף וה-Summary הם רכיבי תצוגה עם `input()`/`output()` בלבד.
+- **הפרדת אחריות:** ‏`RequestsApiService` הוא המקום היחיד שמכיר HTTP. ‏`RequestsPageComponent` מחזיק את ה-State. הטבלה, המסננים, הדפדוף, הנתונים המסכמים ופס העדכון המרוכז הם רכיבי תצוגה עם `input()`/`output()` בלבד.
 
 ## החלטות טכנולוגיות וחלופות
 
